@@ -12,7 +12,7 @@ from tqdm import tqdm
 from transformers import (AutoModel, AutoModelForTokenClassification,
                           AutoTokenizer, DataCollatorForTokenClassification,
                           DataCollatorWithPadding)
-
+import argparse
 
 def preprocess_mawps(example, tokenizer):
     # question = example['question_split'] + ' [OP]'
@@ -78,9 +78,14 @@ def process_predictions(predictions,labels):
 
     return true_labels, true_predictions
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--model', default='BERT')
+args = parser.parse_args() 
 
-model_id = 'bert-base-uncased'
-# model_id = 'roberta'
+if args.model == 'BERT':
+    model_id = 'bert-base-uncased'
+elif args.model == 'RoBERTa':
+    model_id = 'roberta-base'
 
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 special_tokens = {'additional_special_tokens': ["[OP]"]}
@@ -286,9 +291,9 @@ for epoch in range(num_train_epochs):
     # accelerator.wait_for_everyone()
     # unwrapped_model = accelerator.unwrap_model(model)
     # unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
-    model.save_pretrained(f'model_{epoch}_{datetime.datetime.now()}.pt')
+    model.save_pretrained(f'{args.model}_model_{epoch}_{datetime.datetime.now()}.pt')
 
     # if accelerator.is_main_process:
-tokenizer.save_pretrained(f'tokenizer_{datetime.datetime.now()}')
+tokenizer.save_pretrained(f'{args.model}_tokenizer_{datetime.datetime.now()}')
 
-model.push_to_hub(f'vishruthnath/Calc_BERT_{datetime.datetime.now()}')
+model.push_to_hub(f'vishruthnath/Calc_{args.model}_{datetime.datetime.now()}')
