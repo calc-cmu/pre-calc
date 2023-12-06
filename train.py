@@ -80,6 +80,7 @@ def process_predictions(predictions,labels):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='BERT')
+parser.add_argument('--epochs', type=int, default=10)
 args = parser.parse_args() 
 
 if args.model == 'BERT':
@@ -137,7 +138,7 @@ model.resize_token_embeddings(len(tokenizer)) # Resize embedding to include spec
 # =============== Training loop
 optimizer = AdamW(model.parameters(), lr=2e-5)
 
-num_train_epochs = 5
+num_train_epochs = args.epochs
 num_update_steps_per_epoch = len(train_dataloader)
 num_training_steps = num_train_epochs * num_update_steps_per_epoch
 
