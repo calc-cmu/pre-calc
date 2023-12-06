@@ -220,7 +220,7 @@ for epoch in range(num_train_epochs):
         with torch.no_grad():
             model_input_keys = ['input_ids', 'token_type_ids', 'attention_mask', 'labels']
             model_input = {k: v for k,v in batch.items() if k in model_input_keys} # Filter out keys
-            outputs = model(**model_input)
+            outputs = model(**model_input, output_hidden_states=True)
             # outputs = model(**batch)
 
         # Token/OPerand predictions ===== 
