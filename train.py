@@ -260,9 +260,10 @@ for epoch in range(num_train_epochs):
         # ===== 
         operation_preds = operation_preds.detach().cpu().clone().numpy()
         operation_labels = operation_labels.detach().cpu().clone().numpy()
-        op_preds_names = [operation_id2label[p] for p in operation_preds]
-        op_labels_names = [operation_id2label[l] for l in operation_labels]
-        operation_metric.add_batch(predictions=op_preds_names, references=op_labels_names)
+        # op_preds_names = [operation_id2label[p] for p in operation_preds]
+        # op_labels_names = [operation_id2label[l] for l in operation_labels]
+        # operation_metric.add_batch(predictions=op_preds_names, references=op_labels_names)
+        operation_metric.add_batch(predictions=operation_preds, references=operation_labels)
 
     token_results = token_metric.compute()
     operation_results = operation_metric.compute()
@@ -274,18 +275,20 @@ for epoch in range(num_train_epochs):
         },
     )
     print(
-        f"epoch {epoch}: Seq/OPeration",
-        {
-            key: operation_results[f"overall_{key}"]
-            for key in ["precision", "recall", "f1", "accuracy"]
-        },
+        f"epoch {epoch}: Seq/OPeration", operation_results
+        #{
+        #  key: operation_results[key]
+        #   for key in ["precision", "recall", "f1", "accuracy"]
+        #},
     )
 
     # Save and upload
     # accelerator.wait_for_everyone()
     # unwrapped_model = accelerator.unwrap_model(model)
     # unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
-    model.save_pretrained(f'model_{epoch}_{datetime.datetime.now()}')
+    model.save_pretrained(f'model_{epoch}_{datetime.datetime.now()}.pt')
 
     # if accelerator.is_main_process:
-    tokenizer.save_pretrained(f'model_{epoch}_{datetime.datetime.now()}')
+tokenizer.save_pretrained(f'tokenizer_{datetime.datetime.now()}')
+
+model.push_to_hub(f'vishruthnath/Calc_BERT_{datetime.datetime.now()}')
