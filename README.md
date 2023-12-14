@@ -15,8 +15,8 @@ To evaluate the trained models on specific tasks, firstly download the datasets 
 
 Then run 
 
-```python ft_flanT5_eval.py``` to test FlanT5 (TB-PT ours)
+```python eval_ft_flanT5.py``` to test FlanT5 (TB-PT ours)
 
 and 
 
-```python fs_flanT5_eval.py``` to test FlanT5 with few-shot prompting
+```python eval_fs_flanT5.py``` to test FlanT5 with few-shot prompting
