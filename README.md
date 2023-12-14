@@ -1,5 +1,7 @@
 ## Encoder- Decoder Based approach
 
+```cd Encoder-Decoder```
+
 For continued pretraining on reframed MAWPS and Multi-NLI data, download the data from https://huggingface.co/datasets/vishwa27/MAWPS-MNLI-CalX-NumEval and place them under the data folder as
 
 ```data/train_preft_flant5.csv```
@@ -13,7 +15,7 @@ To evaluate the trained models on specific tasks, firstly download the datasets 
 
 Then run 
 
-```python ft_flanT5_eval.py``` to test FlanT5 (ST ours) or FlanT5 (TB-PT ours)
+```python ft_flanT5_eval.py``` to test FlanT5 (TB-PT ours)
 
 and 
 
