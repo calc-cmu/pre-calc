@@ -85,10 +85,11 @@ args = parser.parse_args()
 
 if args.model == 'BERT':
     model_id = 'bert-base-uncased'
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
 elif args.model == 'RoBERTa':
     model_id = 'roberta-base'
+    tokenizer = AutoTokenizer.from_pretrained(model_id, add_prefix_space=True)
 
-tokenizer = AutoTokenizer.from_pretrained(model_id)
 special_tokens = {'additional_special_tokens': ["[OP]"]}
 tokenizer.add_special_tokens(special_tokens)
 
@@ -297,4 +298,4 @@ for epoch in range(num_train_epochs):
     # if accelerator.is_main_process:
 tokenizer.save_pretrained(f'{args.model}_tokenizer_{datetime.datetime.now()}')
 
-model.push_to_hub(f'vishruthnath/Calc_{args.model}_{datetime.datetime.now()}')
+model.push_to_hub(f'vishruthnath/Calc_{args.model}_{args.epochs}')
