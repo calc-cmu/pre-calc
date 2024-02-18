@@ -321,11 +321,11 @@ for epoch in range(num_train_epochs):
         os.makedirs(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/')
 
     model.save_pretrained(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_model_{epoch}_{datetime.datetime.now()}.pt')
+    torch.save(operation_head.state_dict(), f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_operation_head_ep{epoch}_{datetime.datetime.now()}.pth')
 
     if epoch % 10 == 0:
         model.push_to_hub(f'vishruthnath/Calc_new_{args.model}_ep{epoch}')
         tokenizer.save_pretrained(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_tokenizer_ep{epoch}_{datetime.datetime.now()}')
-        torch.save(operation_head.state_dict(), f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_operation_head_ep{epoch}_{datetime.datetime.now()}.pth')
 
 model.save_pretrained(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_model_{args.epochs}_{datetime.datetime.now()}.pt')
 tokenizer.save_pretrained(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_tokenizer_ep{args.epochs}_{datetime.datetime.now()}')
