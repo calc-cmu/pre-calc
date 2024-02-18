@@ -12,6 +12,9 @@ from tqdm import tqdm
 from transformers import (AutoModel, AutoModelForTokenClassification,
                           AutoTokenizer, DataCollatorForTokenClassification,
                           DataCollatorWithPadding)
+import wandb
+import os
+
 import argparse
 
 def preprocess_mawps(example, tokenizer):
@@ -81,7 +84,16 @@ def process_predictions(predictions,labels):
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='BERT')
 parser.add_argument('--epochs', type=int, default=10)
+parser.add_argument('--batch_size', type=int, default=8)
 args = parser.parse_args() 
+
+wandb.login(key=os.environ['WANDB_KEY'])
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="Calc-BERT",
+    name = f"{args.model}_epochs{args.epochs}", ## Wandb creates random run names if you skip this field
+    reinit = True
+)
 
 if args.model == 'BERT':
     model_id = 'bert-base-uncased'
@@ -108,11 +120,14 @@ token_id2label = {
 }
 token_label2id = {v: k for k,v in token_id2label.items()}
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-dataset = datasets.load_dataset('vishruthnath/Calc-MAWPS-CalcBERT-Tags')
+# dataset = datasets.load_dataset('vishruthnath/Calc-MAWPS-CalcBERT-Tags')
+dataset = datasets.load_dataset('vishruthnath/Calc-Combined-Tagged')
 combined_tokenized_dataset = dataset.map(preprocess_mawps,
-                                         fn_kwargs={"tokenizer": tokenizer},
-                                         remove_columns=['id', 'chain', 'equation', 'expression', 'num_unique_ops', 'operand_tags', 'operands', 'operation', 'question', 'question_split', 'valid', '__index_level_0__', 'result'])
+            fn_kwargs={"tokenizer": tokenizer},
+            remove_columns=['id', 'chain', 'equation', 'expression', 'num_unique_ops', 'operand_tags', 'operand', 'operation', 'question', 'question_split', 'valid', '__index_level_0__', 'result', 
+                            'problem_type', 'grade', 'result_unit', 'source_question']) # Extra columns when SVAMP and AsDiv combined
 # kept columns (id, result, 'input_ids', 'token_type_ids', 'attention_mask', 'operation_labels', 'labels')
 # rename result_float to result 
 combined_tokenized_dataset.rename_column('result_float', 'result')
@@ -120,12 +135,12 @@ combined_tokenized_dataset.rename_column('result_float', 'result')
 data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer, padding=True)
 
 train_dataset = combined_tokenized_dataset['train']
-val_dataset = combined_tokenized_dataset['validation']
+# val_dataset = combined_tokenized_dataset['validation']
 test_dataset = combined_tokenized_dataset['test']
 
-train_dataloader = DataLoader(train_dataset, collate_fn=data_collator, batch_size=8)
-val_dataloader = DataLoader(val_dataset, collate_fn=data_collator, batch_size=8)
-test_dataloader = DataLoader(test_dataset, collate_fn=data_collator, batch_size=8)
+train_dataloader = DataLoader(train_dataset, collate_fn=data_collator, batch_size=args.batch_size)
+# val_dataloader = DataLoader(val_dataset, collate_fn=data_collator, batch_size=8)
+test_dataloader = DataLoader(test_dataset, collate_fn=data_collator, batch_size=args.batch_size)
 
 model = AutoModelForTokenClassification.from_pretrained(
         model_id,
@@ -134,7 +149,7 @@ model = AutoModelForTokenClassification.from_pretrained(
         ignore_mismatched_sizes=True
     )
 model.resize_token_embeddings(len(tokenizer)) # Resize embedding to include special token [OP]
-
+model.to(device)
 
 # =============== Training loop
 optimizer = AdamW(model.parameters(), lr=2e-5)
@@ -143,7 +158,7 @@ num_train_epochs = args.epochs
 num_update_steps_per_epoch = len(train_dataloader)
 num_training_steps = num_train_epochs * num_update_steps_per_epoch
 
-operation_head = torch.nn.Linear(model.config.hidden_size, len(operation_id2label))
+operation_head = torch.nn.Linear(model.config.hidden_size, len(operation_id2label)).to(device)
 
 token_metric = evaluate.load("seqeval")
 operation_metric = evaluate.load("accuracy")
@@ -159,7 +174,7 @@ for epoch in range(num_train_epochs):
     for batch in train_dataloader:
         # ['result_float', 'input_ids', 'token_type_ids', 'attention_mask', 'length', 'operation_labels', 'labels']
         model_input_keys = ['input_ids', 'token_type_ids', 'attention_mask', 'labels']
-        model_input = {k: v for k,v in batch.items() if k in model_input_keys} # Filter out keys
+        model_input = {k: v.to(device) for k,v in batch.items() if k in model_input_keys} # Filter out keys
         outputs = model(**model_input,
                         output_hidden_states=True)
 
@@ -198,7 +213,7 @@ for epoch in range(num_train_epochs):
         operation_preds = operation_head(op_token_reps)
         # print(operation_preds.shape, operation_preds)
 
-        operation_classification_loss = F.cross_entropy(operation_preds, batch['operation_labels'])
+        operation_classification_loss = F.cross_entropy(operation_preds, batch['operation_labels'].to(device))
         # print(operation_classification_loss)
 
 
@@ -223,16 +238,16 @@ for epoch in range(num_train_epochs):
 
     # Evaluation
     model.eval()
-    for batch in val_dataloader:
+    for batch in test_dataloader:
         with torch.no_grad():
             model_input_keys = ['input_ids', 'token_type_ids', 'attention_mask', 'labels']
-            model_input = {k: v for k,v in batch.items() if k in model_input_keys} # Filter out keys
+            model_input = {k: v.to(device) for k,v in batch.items() if k in model_input_keys} # Filter out keys
             outputs = model(**model_input, output_hidden_states=True)
             # outputs = model(**batch)
 
         # Token/OPerand predictions ===== 
         token_predictions = outputs.logits.argmax(dim=-1)
-        token_labels = batch["labels"]
+        token_labels = batch["labels"].to(device)
         # ==========
 
         # =========== Computing operation classification preds
@@ -250,7 +265,7 @@ for epoch in range(num_train_epochs):
         op_token_reps = torch.stack(op_token_reps).squeeze() # (bs, hidden_size)
         # op_input_ids = torch.stack(op_input_ids).squeeze() #For sanity check 
         operation_preds = operation_head(op_token_reps).argmax(dim=-1)
-        operation_labels = batch['operation_labels']
+        operation_labels = batch['operation_labels'].to(device)
         # =============================
 
         # # Necessary to pad predictions and labels for being gathered
@@ -289,13 +304,31 @@ for epoch in range(num_train_epochs):
         #},
     )
 
+    log_dict = {
+            f'token_{key}': token_results[f"overall_{key}"]
+            for key in ["precision", "recall", "f1", "accuracy"]
+    }
+    log_dict['operation_acc'] = operation_results['accuracy']
+    wandb.log(log_dict)
+
     # Save and upload
     # accelerator.wait_for_everyone()
     # unwrapped_model = accelerator.unwrap_model(model)
     # unwrapped_model.save_pretrained(output_dir, save_function=accelerator.save)
-    model.save_pretrained(f'{args.model}_model_{epoch}_{datetime.datetime.now()}.pt')
+    project_dir = os.environ['PROJECT_DIR']
 
-    # if accelerator.is_main_process:
-tokenizer.save_pretrained(f'{args.model}_tokenizer_{datetime.datetime.now()}')
+    if not os.path.exists(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/'):
+        os.makedirs(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/')
+
+    model.save_pretrained(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_model_{epoch}_{datetime.datetime.now()}.pt')
+
+    if epoch % 10 == 0:
+        model.push_to_hub(f'vishruthnath/Calc_new_{args.model}_ep{epoch}')
+        tokenizer.save_pretrained(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_tokenizer_ep{epoch}_{datetime.datetime.now()}')
+        torch.save(operation_head.state_dict(), f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_operation_head_ep{epoch}_{datetime.datetime.now()}.pth')
+
+model.save_pretrained(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_model_{args.epochs}_{datetime.datetime.now()}.pt')
+tokenizer.save_pretrained(f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_tokenizer_ep{args.epochs}_{datetime.datetime.now()}')
+torch.save(operation_head.state_dict(), f'{project_dir}/anlp_Calc_checkpoints/{args.model}_comb_2/{args.model}_operation_head_ep{args.epochs}_{datetime.datetime.now()}.pth')
 
 model.push_to_hub(f'vishruthnath/Calc_{args.model}_{args.epochs}')
