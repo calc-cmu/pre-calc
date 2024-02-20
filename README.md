@@ -1,6 +1,5 @@
-# Learning to Use the Calculator Improves Numerical Abilities of Language Models
-Source code for the project titled as above for CMU's 11-711 ANLP course project
-Team Number 26 
+# Pre-Calc – Learning to Use the Calculator Improves Numeracy in Language Models
+Source code for the project titled as above
 
 You can find our datasets and models at https://huggingface.co/collections/CMU-ANLP-Team-26/
 
@@ -11,7 +10,9 @@ You can find our datasets and models at https://huggingface.co/collections/CMU-A
 
 ```train.py``` contains the script for continued pretraining with the dual objective. The data used is Calc_BERT_20 linked above from Huggingface. 
 
-```qnli_finetuine.py``` is the script for finetuning Calc-BERT on downstream QNLI tasks. 
+```qnli_finetuine_inference.py``` is the script for finetuning Calc-BERT on downstream QNLI tasks. 
+
+```inference_awpnli.py``` for inference of Pre-Calc model on AWPNLI Tasks
 
 ## Encoder- Decoder Based approach
 
