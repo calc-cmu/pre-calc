@@ -4,6 +4,15 @@ Team Number 26
 
 You can find our datasets and models at https://huggingface.co/collections/CMU-ANLP-Team-26/
 
+## Encoder-Only Approach 
+```cd Encoder-Only```
+
+```data_preprocessing.py``` preprocesses the Calc-MAWPS data [https://huggingface.co/datasets/MU-NLPC/Calc-mawps](https://huggingface.co/datasets/MU-NLPC/Calc-mawps) with annotations required for Calc-BERT continued pretraining. Preprocessed data pushed to [https://huggingface.co/vishruthnath/Calc_BERT_20](https://huggingface.co/vishruthnath/Calc_BERT_20). 
+
+```train.py``` contains the script for continued pretraining with the dual objective. The data used is Calc_BERT_20 linked above from Huggingface. 
+
+```qnli_finetuine.py``` is the script for finetuning Calc-BERT on downstream QNLI tasks. 
+
 ## Encoder- Decoder Based approach
 
 ```cd Encoder-Decoder```
@@ -26,12 +35,3 @@ Then run
 and 
 
 ```python eval_fs_flanT5.py``` to test FlanT5 with few-shot prompting
-
-## Encoder-Only Approach 
-```cd Encoder-Only```
-
-```data_preprocessing.py``` preprocesses the Calc-MAWPS data [https://huggingface.co/datasets/MU-NLPC/Calc-mawps](https://huggingface.co/datasets/MU-NLPC/Calc-mawps) with annotations required for Calc-BERT continued pretraining. Preprocessed data pushed to [https://huggingface.co/vishruthnath/Calc_BERT_20](https://huggingface.co/vishruthnath/Calc_BERT_20). 
-
-```train.py``` contains the script for continued pretraining with the dual objective. The data used is Calc_BERT_20 linked above from Huggingface. 
-
-```qnli_finetuine.py``` is the script for finetuning Calc-BERT on downstream QNLI tasks. 
