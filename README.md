@@ -1,4 +1,7 @@
 # Pre-Calc – Learning to Use the Calculator Improves Numeracy in Language Models
+
+This work has been accepted at SemEval NAACL 2024, please find the paper here: https://drive.google.com/file/d/1-XCOW0o27mTz7gNJe48SNfTIU_-0DHzr/view?usp=sharing
+
 Source code for the project titled as above
 
 You can find our datasets and models at https://huggingface.co/collections/Calc-CMU/pre-calc-657a5ad5f1ae42fb12364563
