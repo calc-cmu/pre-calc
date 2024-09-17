@@ -1,6 +1,7 @@
 # Pre-Calc – Learning to Use the Calculator Improves Numeracy in Language Models
 
-This work has been accepted at SemEval NAACL 2024, please find the paper here: https://drive.google.com/file/d/1-XCOW0o27mTz7gNJe48SNfTIU_-0DHzr/view?usp=sharing
+Paper: https://arxiv.org/abs/2404.14355     
+Published/Presented at SemEval @ NAACL 2024 and **AIForMath workshop @ ICML 2024**
 
 Source code for the project titled as above
 
